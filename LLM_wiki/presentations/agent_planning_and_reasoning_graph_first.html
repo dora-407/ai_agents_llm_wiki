@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Planning & Reasoning：學術架構與認知演進 (Graph Edition)</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(22, 28, 45, 0.7);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --cyan: #06b6d4;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --footnote-color: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", Roboto, "Helvetica Neue", sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 15%, #182238 0%, var(--bg) 85%);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      user-select: none;
+    }
+
+    /* Header Bar */
+    header {
+      padding: 16px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(11, 15, 25, 0.75);
+      backdrop-filter: blur(16px);
+      z-index: 100;
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge-academic {
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+    }
+
+    .slide-progress {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Main Container */
+    main.deck-container {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 48px;
+    }
+
+    .slide {
+      position: absolute;
+      width: 100%;
+      max-width: 1160px;
+      height: 84vh;
+      max-height: 740px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 36px 48px 24px 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(16px) scale(0.985);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Slide Header */
+    .slide-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .slide-tag {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+    }
+
+    h1.slide-title {
+      font-size: 1.95rem;
+      font-weight: 800;
+      line-height: 1.25;
+      background: linear-gradient(135deg, #ffffff 45%, var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+
+    p.slide-desc {
+      font-size: 0.98rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    /* Central Graph Area */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 16px;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .graph-stage {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Grids & Cards */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 18px 22px;
+      line-height: 1.55;
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card ul {
+      padding-left: 18px;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+    }
+
+    .card li {
+      margin-bottom: 5px;
+    }
+
+    /* Academic Footnote */
+    .academic-footnote {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 12px;
+      margin-top: 12px;
+      font-size: 0.78rem;
+      color: var(--footnote-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      line-height: 1.4;
+    }
+
+    .academic-footnote strong {
+      color: var(--text-muted);
+    }
+
+    /* Footer Controls */
+    footer.controls-bar {
+      padding: 14px 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--card-border);
+      background: rgba(11, 15, 25, 0.75);
+      backdrop-filter: blur(16px);
+    }
+
+    .progress-bar-container {
+      flex: 1;
+      max-width: 450px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 0 24px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--cyan));
+      width: 10%;
+      transition: width 0.3s ease;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    button.btn-nav {
+      background: rgba(255, 255, 255, 0.07);
+      color: #fff;
+      border: 1px solid var(--card-border);
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    button.btn-nav:hover:not(:disabled) {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    button.btn-nav:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+
+    .key-hints {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 8px;
+    }
+
+    .key {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.75rem;
+    }
+
+    /* SVG Diagram Styling */
+    svg.graph-svg {
+      width: 100%;
+      max-height: 250px;
+    }
+
+    .node-rect {
+      rx: 8;
+      stroke-width: 1.5;
+    }
+
+    .node-text-title {
+      font-size: 13px;
+      font-weight: 700;
+      fill: #f8fafc;
+      text-anchor: middle;
+    }
+
+    .node-text-sub {
+      font-size: 10.5px;
+      fill: #94a3b8;
+      text-anchor: middle;
+    }
+
+    .edge-line {
+      stroke-width: 1.8;
+      fill: none;
+    }
+
+    .edge-text {
+      font-size: 10px;
+      font-weight: 600;
+      fill: #38bdf8;
+      text-anchor: middle;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="brand-title">
+      <span class="badge-academic">Academic Edition</span>
+      <span>Agent Planning & Reasoning：學術架構與認知演進</span>
+    </div>
+    <div class="slide-progress" id="slideNum">Slide 1 / 10</div>
+  </header>
+
+  <!-- Main Slide Canvas -->
+  <main class="deck-container">
+
+    <!-- ==================== SLIDE 1 ==================== -->
+    <section class="slide active" data-index="1">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="slide-tag">全景導航 • 認知演進圖譜</span>
+          <span style="font-size: 0.8rem; color: var(--accent-light);">Foundational Roadmap</span>
+        </div>
+        <h1 class="slide-title">Agent Planning & Reasoning：架構演進全景</h1>
+        <p class="slide-desc">從無狀態文本生成（Stateless Generation）到目標導向階層分解（Goal-Oriented Decomposition）的計算範式躍遷。</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="graph-stage">
+          <svg class="graph-svg" viewBox="0 0 1000 180">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#6366f1"/>
+              </marker>
+            </defs>
+
+            <!-- Node 1 -->
+            <rect x="20" y="50" width="160" height="70" class="node-rect" fill="#1e2238" stroke="#475569"/>
+            <text x="100" y="80" class="node-text-title">1. 無狀態模型</text>
+            <text x="100" y="100" class="node-text-sub">單輪 Prompt 文本生成</text>
+
+            <line x1="180" y1="85" x2="225" y2="85" class="edge-line" stroke="#6366f1" marker-end="url(#arrow)"/>
+
+            <!-- Node 2 -->
+            <rect x="225" y="50" width="160" height="70" class="node-rect" fill="#1e2238" stroke="#6366f1"/>
+            <text x="305" y="80" class="node-text-title">2. 線性鏈 (CoT)</text>
+            <text x="305" y="100" class="node-text-sub">中間推論序列構建</text>
+
+            <line x1="385" y1="85" x2="430" y2="85" class="edge-line" stroke="#6366f1" marker-end="url(#arrow)"/>
+
+            <!-- Node 3 -->
+            <rect x="430" y="50" width="160" height="70" class="node-rect" fill="#1e2238" stroke="#06b6d4"/>
+            <text x="510" y="80" class="node-text-title">3. 狀態閉環 (ReAct)</text>
+            <text x="510" y="100" class="node-text-sub">思考-行動-環境觀察</text>
+
+            <line x1="590" y1="85" x2="635" y2="85" class="edge-line" stroke="#6366f1" marker-end="url(#arrow)"/>
+
+            <!-- Node 4 -->
+            <rect x="635" y="50" width="160" height="70" class="node-rect" fill="#1e2238" stroke="#10b981"/>
+            <text x="715" y="80" class="node-text-title">4. 樹搜尋 (MCTS)</text>
+            <text x="715" y="100" class="node-text-sub">推論期算力與自省排序</text>
+
+            <line x1="795" y1="85" x2="840" y2="85" class="edge-line" stroke="#6366f1" marker-end="url(#arrow)"/>
+
+            <!-- Node 5 -->
+            <rect x="840" y="50" width="140" height="70" class="node-rect" fill="#1e2238" stroke="#f59e0b"/>
+            <text x="910" y="80" class="node-text-title">5. 符號/因果混合</text>
+            <text x="910" y="100" class="node-text-sub">形式化驗證與反事實</text>
+          </svg>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>核心問題定義</h3>
+            <p>大型語言模型本質為條件機率分佈 $P(w_t | w_{<t})$ 之自回歸採樣器。在缺乏外部狀態接地（Grounding）時，無法自主保證長程序列決策的邏輯自洽與物理可行性。</p>
+          </div>
+          <div class="card">
+            <h3>架構演進動力</h3>
+            <p>從「單次提示推論」轉向「認知架構（Cognitive Architectures）」：引入狀態快取、環境反饋閉環、啟發式樹搜尋演算法與因果干預模型。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="academic-footnote">
+        📖 <strong>學術文獻依據</strong>：Sapkota, Roumeliotis & Karkee, <em>"AI Agents vs. Agentic AI: A Conceptual taxonomy, applications and challenges"</em>, Information Fusion 126, 2026.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 2 ==================== -->
+    <section class="slide" data-index="2">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="slide-tag">範式對比 • 系統邊界</span>
+          <span style="font-size: 0.8rem; color: var(--accent-light);">System Paradigm Comparison</span>
+        </div>
+        <h1 class="slide-title">靜態語言模型 vs. 自主代理系統</h1>
+        <p class="slide-desc">比較輸入驅動型推論與目標驅動型閉環控制系統之本質差異。</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="graph-stage">
+          <svg class="graph-svg" viewBox="0 0 1000 190">
+            <!-- Left: Generative LLM -->
+            <rect x="40" y="20" width="420" height="150" rx="10" fill="#161c2d" stroke="#f43f5e" stroke-dasharray="4"/>
+            <text x="250" y="45" class="node-text-title" fill="#f43f5e">Generative LLM (開環/無狀態系統)</text>
+            
+            <rect x="60" y="75" width="90" height="45" rx="6" fill="#1e293b" stroke="#64748b"/>
+            <text x="105" y="102" class="node-text-sub">Prompt $x$</text>
+
+            <line x1="150" y1="97" x2="200" y2="97" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+            <rect x="200" y="65" width="120" height="65" rx="6" fill="#334155" stroke="#f43f5e"/>
+            <text x="260" y="95" class="node-text-title">Frozen LLM</text>
+            <text x="260" y="112" class="node-text-sub">$P(y|x)$</text>
+
+            <line x1="320" y1="97" x2="365" y2="97" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+            <rect x="365" y="75" width="80" height="45" rx="6" fill="#1e293b" stroke="#64748b"/>
+            <text x="405" y="102" class="node-text-sub">Output $y$</text>
+
+            <!-- Right: AI Agent System -->
+            <rect x="520" y="20" width="440" height="150" rx="10" fill="#161c2d" stroke="#10b981"/>
+            <text x="740" y="45" class="node-text-title" fill="#10b981">AI Agent Architecture (閉環控制/狀態機)</text>
+
+            <rect x="540" y="75" width="80" height="40" rx="6" fill="#1e293b" stroke="#10b981"/>
+            <text x="580" y="100" class="node-text-sub">目標 Goal</text>
+
+            <line x1="620" y1="95" x2="655" y2="95" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+            <rect x="655" y="65" width="100" height="60" rx="6" fill="#1e293b" stroke="#06b6d4"/>
+            <text x="705" y="92" class="node-text-title">Planner</text>
+            <text x="705" y="110" class="node-text-sub">狀態 $h_t$ 推演</text>
+
+            <line x1="755" y1="95" x2="795" y2="95" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+            <rect x="795" y="75" width="80" height="40" rx="6" fill="#1e293b" stroke="#f59e0b"/>
+            <text x="835" y="100" class="node-text-sub">Action $a_t$</text>
+
+            <line x1="875" y1="95" x2="905" y2="95" stroke="#10b981" stroke-width="1.5"/>
+            <line x1="905" y1="95" x2="905" y2="145" stroke="#10b981" stroke-width="1.5"/>
+            <line x1="905" y1="145" x2="705" y2="145" stroke="#10b981" stroke-width="1.5"/>
+            <line x1="705" y1="145" x2="705" y2="128" stroke="#10b981" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <text x="805" y="140" class="edge-text" fill="#10b981">環境反饋 $o_t$ (Observation)</text>
+          </svg>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>無狀態模型特徵 (Generative AI)</h3>
+            <ul>
+              <li><strong>開環推論（Open-loop）</strong>：單次生成後終止，不對輸出造成的環境影響承擔驗證責任。</li>
+              <li><strong>時間無連續性</strong>：上下文視窗（Context Window）重置即丟失歷史狀態。</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>代理系統特徵 (AI Agent)</h3>
+            <ul>
+              <li><strong>狀態追蹤</strong>：維護歷史軌跡 $h_t = (a_1, \dots, a_{t-1}, o_t)$，依環境回饋更新狀態。</li>
+              <li><strong>動態重規劃（Dynamic Replanning）</strong>：行動失敗時具備重試、分支切換與恢復機制。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="academic-footnote">
+        📖 <strong>學術文獻依據</strong>：Wooldridge & Jennings, <em>"Intelligent agents: theory and practice"</em>, Knowl. Eng. Rev. 1995 | Sapkota et al., 2026.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 3 ==================== -->
+    <section class="slide" data-index="3">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="slide-tag">線性推理 • 誤差級聯</span>
+          <span style="font-size: 0.8rem; color: var(--accent-light);">Linear Reasoning & Error Cascades</span>
+        </div>
+        <h1 class="slide-title">Chain-of-Thought (CoT) 與誤差級聯脆弱性</h1>
+        <p class="slide-desc">逐步生成中間推理語義鏈的優勢，以及缺乏環境接地時產生的誤差指數級放大現象。</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="graph-stage">
+          <svg class="graph-svg" viewBox="0 0 1000 170">
+            <!-- Step 1 -->
+            <rect x="40" y="45" width="220" height="75" rx="8" fill="#1e2238" stroke="#f59e0b"/>
+            <text x="150" y="75" class="node-text-title">Step 1: 先驗假設生成</text>
+            <text x="150" y="98" class="node-text-sub" fill="#f87171">⚠ 存在微小事實幻覺 $\epsilon_1$</text>
+
+            <line x1="260" y1="82" x2="350" y2="82" stroke="#f43f5e" stroke-width="2.5" marker-end="url(#arrow)"/>
+            <text x="305" y="75" class="edge-text" fill="#f87171">誤差注入</text>
+
+            <!-- Step 2 -->
+            <rect x="350" y="45" width="240" height="75" rx="8" fill="#1e2238" stroke="#f43f5e"/>
+            <text x="470" y="75" class="node-text-title">Step 2: 條件演繹推導</text>
+            <text x="470" y="98" class="node-text-sub" fill="#f87171">基於錯誤前提展開推論</text>
+
+            <line x1="590" y1="82" x2="680" y2="82" stroke="#f43f5e" stroke-width="4" marker-end="url(#arrow)"/>
+            <text x="635" y="75" class="edge-text" fill="#f87171">誤差放大</text>
+
+            <!-- Step 3 -->
+            <rect x="680" y="45" width="260" height="75" rx="8" fill="#2d1520" stroke="#f43f5e"/>
+            <text x="810" y="75" class="node-text-title">Step 3: 確定性崩潰輸出</text>
+            <text x="810" y="98" class="node-text-sub" fill="#fca5a5">表面自洽但本質錯誤之結論</text>
+          </svg>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Chain-of-Thought 機制貢獻</h3>
+            <p>透過將聯合機率分解為條件機率鏈 $P(y|x) = \prod_{k=1}^K P(z_k | x, z_{<k})$，使複雜運算獲得更多的推論運算預算（Token Compute），顯著改善算術與邏輯推論基準表現。</p>
+          </div>
+          <div class="card">
+            <h3>誤差雪球效應 (Snowball Effect)</h3>
+            <p>由於自回歸生成對先前 Token 具備強烈先驗承諾性（Prior Commitment），在缺乏外部驗證介入時，初始偏差將在後續推導中被模型視為既定事實進行強化演繹。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="academic-footnote">
+        📖 <strong>學術文獻依據</strong>：Wei et al., <em>"Chain-of-thought prompting elicits reasoning in large language models"</em>, NeurIPS 2022 | Zhang et al., <em>"How Language Model Hallucinations Can Snowball"</em>, arXiv:2305.13534, 2023.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 4 ==================== -->
+    <section class="slide" data-index="4">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="slide-tag">閉環架構 • 狀態接地</span>
+          <span style="font-size: 0.8rem; color: var(--accent-light);">Interleaved Reasoning and Acting</span>
+        </div>
+        <h1 class="slide-title">狀態閉環交互：ReAct (Reasoning + Acting) 範式</h1>
+        <p class="slide-desc">內部認知推理鏈與外部動作空間交錯執行之經典閉環架構。</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="graph-stage">
+          <svg class="graph-svg" viewBox="0 0 1000 190">
+            <!-- Node: Thought -->
+            <rect x="100" y="60" width="220" height="70" rx="8" fill="#1e2238" stroke="#6366f1"/>
+            <text x="210" y="90" class="node-text-title">Thought (內部推論)</text>
+            <text x="210" y="112" class="node-text-sub">分析當前狀態與分解子目標</text>
+
+            <line x1="320" y1="95" x2="430" y2="95" stroke="#6366f1" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="375" y="85" class="edge-text">生成動作</text>
+
+            <!-- Node: Action -->
+            <rect x="430" y="60" width="220" height="70" rx="8" fill="#1e2238" stroke="#f59e0b"/>
+            <text x="540" y="90" class="node-text-title">Action (外部執行)</text>
+            <text x="540" y="112" class="node-text-sub">調用 API / SQL / 檢索工具</text>
+
+            <line x1="650" y1="95" x2="760" y2="95" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="705" y="85" class="edge-text">環境互動</text>
+
+            <!-- Node: Observation -->
+            <rect x="760" y="60" width="200" height="70" rx="8" fill="#1e2238" stroke="#10b981"/>
+            <text x="860" y="90" class="node-text-title">Observation (觀察)</text>
+            <text x="860" y="112" class="node-text-sub">結構化環境回傳值</text>
+
+            <!-- Return loop -->
+            <path d="M 860 130 L 860 165 L 210 165 L 210 132" fill="none" stroke="#06b6d4" stroke-width="2" stroke-dasharray="4" marker-end="url(#arrow)"/>
+            <text x="540" y="158" class="edge-text" fill="#06b6d4">狀態回填至 Context Window (Grounding)</text>
+          </svg>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>核心架構優勢</h3>
+            <ul>
+              <li><strong>動態事實修正</strong>：推理步驟由真實環境數據即時約束，阻斷幻覺積累。</li>
+              <li><strong>實證數據</strong>：在 HotpotQA 基準測試中，ReAct 架構將幻覺率由 CoT 的 <strong>14% 顯著降低至 6%</strong>。</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>固有架構瓶頸</h3>
+            <ul>
+              <li><strong>循環死鎖（Repetitive Loops）</strong>：當工具回傳資訊不足或格式異常時，模型易反覆生成相同推理與動作，無法自發跳出。</li>
+              <li><strong>單線貪婪搜尋</strong>：僅維護單一推理路徑，缺乏全局前瞻性與狀態回溯機制。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="academic-footnote">
+        📖 <strong>學術文獻依據</strong>：Yao, Zhao, Yu, Du, Shafran, Narasimhan & Cao, <em>"ReAct: Synergizing Reasoning and Acting in Language Models"</em>, ICLR 2023.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 5 ==================== -->
+    <section class="slide" data-index="5">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="slide-tag">反思架構 • 語言強化</span>
+          <span style="font-size: 0.8rem; color: var(--accent-light);">Verbal Reinforcement Learning</span>
+        </div>
+        <h1 class="slide-title">Reflexion：雙層反思與情節記憶機制</h1>
+        <p class="slide-desc">以語言反饋信號（Verbal Feedback）實現非權重更新的自我糾錯架構。</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="graph-stage">
+          <svg class="graph-svg" viewBox="0 0 1000 200">
+            <!-- Inner Loop (Execution) -->
+            <rect x="50" y="45" width="400" height="135" rx="10" fill="#161c2d" stroke="#6366f1" stroke-dasharray="3"/>
+            <text x="250" y="70" class="node-text-title" fill="#818cf8">內層執行軌跡 (Trial Execution Loop)</text>
+            
+            <rect x="80" y="95" width="140" height="50" rx="6" fill="#1e293b" stroke="#475569"/>
+            <text x="150" y="125" class="node-text-sub">Actor (ReAct 軌跡)</text>
+
+            <line x1="220" y1="120" x2="280" y2="120" stroke="#6366f1" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+            <rect x="280" y="95" width="140" height="50" rx="6" fill="#1e293b" stroke="#f59e0b"/>
+            <text x="350" y="125" class="node-text-sub">執行結果 $y$</text>
+
+            <!-- Evaluator -->
+            <line x1="450" y1="120" x2="520" y2="120" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow)"/>
+            <rect x="520" y="85" width="160" height="70" rx="8" fill="#2d1520" stroke="#f43f5e"/>
+            <text x="600" y="115" class="node-text-title" fill="#fb7185">Evaluator 判定</text>
+            <text x="600" y="135" class="node-text-sub">標識失敗狀態 / 錯誤碼</text>
+
+            <!-- Self-reflection -->
+            <line x1="680" y1="120" x2="750" y2="120" stroke="#06b6d4" stroke-width="2" marker-end="url(#arrow)"/>
+            <rect x="750" y="85" width="200" height="70" rx="8" fill="#162c3d" stroke="#06b6d4"/>
+            <text x="850" y="115" class="node-text-title" fill="#38bdf8">Self-Reflection</text>
+            <text x="850" y="135" class="node-text-sub">生成語意糾錯筆記</text>
+
+            <!-- Memory Return -->
+            <path d="M 850 85 L 850 25 L 150 25 L 150 92" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4" marker-end="url(#arrow)"/>
+            <text x="500" y="20" class="edge-text" fill="#10b981">寫入情節記憶 (Episodic Memory Buffer) 供下一輪試驗讀取</text>
+          </svg>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>語言強化學習機制 (Verbal RL)</h3>
+            <p>將標量獎勵（Scalar Reward）轉譯為具備具體語義的自然語言反思提示（如錯誤成因分析），作為先驗條件注入次輪推論上下文，無須進行反向傳播即展現顯著的自適應調優。</p>
+          </div>
+          <div class="card">
+            <h3>理論局限性分析</h3>
+            <p>易陷入<strong>非全局最優局部解（Local Minima）</strong>；缺乏形式化驗證機制，高度依賴客觀外在評判信號（如測試案例通過率），若依賴模型自我評價則存在確認偏誤（Confirmation Bias）。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="academic-footnote">
+        📖 <strong>學術文獻依據</strong>：Shinn, Cassano, Gopinath, Narasimhan & Yao, <em>"Reflexion: Language Agents with Verbal Reinforcement Learning"</em>, NeurIPS 2023.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 6 ==================== -->
+    <section class="slide" data-index="6">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="slide-tag">推論期搜尋 • 算力擴展</span>
+          <span style="font-size: 0.8rem; color: var(--accent-light);">Test-Time Search & Process Supervision</span>
+        </div>
+        <h1 class="slide-title">推論期樹搜尋：MCTS、過程監督與 Agent Q</h1>
+        <p class="slide-desc">在 POMDP 環境中解決長程任務責任分配（Credit Assignment）之搜尋與強化學習架構。</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="graph-stage">
+          <svg class="graph-svg" viewBox="0 0 1000 200">
+            <!-- Root -->
+            <circle cx="100" cy="100" r="28" fill="#1e2238" stroke="#6366f1" stroke-width="2"/>
+            <text x="100" y="105" class="node-text-title" font-size="12">Root $h_0$</text>
+
+            <!-- Edges from root -->
+            <line x1="128" y1="100" x2="260" y2="45" stroke="#475569" stroke-width="1.8"/>
+            <line x1="128" y1="100" x2="260" y2="100" stroke="#10b981" stroke-width="2.5"/>
+            <line x1="128" y1="100" x2="260" y2="155" stroke="#475569" stroke-width="1.8"/>
+
+            <!-- Node 1 (Branch pruned) -->
+            <circle cx="280" cy="45" r="20" fill="#2d1520" stroke="#f43f5e"/>
+            <text x="280" y="49" class="node-text-sub" fill="#f87171">死路</text>
+
+            <!-- Node 2 (Selected branch) -->
+            <circle cx="280" cy="100" r="22" fill="#132e27" stroke="#10b981" stroke-width="2"/>
+            <text x="280" y="105" class="node-text-title" font-size="11">Top Q</text>
+
+            <!-- Node 3 -->
+            <circle cx="280" cy="155" r="20" fill="#1e2238" stroke="#475569"/>
+            <text x="280" y="159" class="node-text-sub">次優</text>
+
+            <!-- AI Critic Box -->
+            <rect x="360" y="15" width="220" height="60" rx="8" fill="#162c3d" stroke="#06b6d4"/>
+            <text x="470" y="38" class="node-text-title" fill="#38bdf8">LLM Process Critic</text>
+            <text x="470" y="58" class="node-text-sub">動作候選價值排序 $\hat{Q}(h_t, a)$</text>
+
+            <line x1="302" y1="100" x2="420" y2="100" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+            <!-- Next Level -->
+            <circle cx="440" cy="100" r="22" fill="#132e27" stroke="#10b981"/>
+            <line x1="462" y1="100" x2="570" y2="70" stroke="#10b981" stroke-width="2"/>
+            <line x1="462" y1="100" x2="570" y2="130" stroke="#475569" stroke-width="1.5"/>
+
+            <circle cx="590" cy="70" r="20" fill="#132e27" stroke="#10b981"/>
+            <circle cx="590" cy="130" r="20" fill="#2d1520" stroke="#f43f5e"/>
+
+            <!-- Backtracking line -->
+            <path d="M 570 130 C 500 170, 350 170, 290 120" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3" marker-end="url(#arrow)"/>
+            <text x="430" y="175" class="edge-text" fill="#f59e0b">Backtracking (回溯至上層節點)</text>
+
+            <!-- DPO Data Collection box -->
+            <rect x="680" y="65" width="280" height="90" rx="8" fill="#1c192b" stroke="#a855f7"/>
+            <text x="820" y="92" class="node-text-title" fill="#c084fc">Trajectory-DPO 離線學習</text>
+            <text x="820" y="112" class="node-text-sub">構建節點偏好對 $(a_t^w \succ a_t^l)$</text>
+            <text x="820" y="132" class="node-text-sub" fill="#34d399">充分利用失敗軌跡作為負樣本</text>
+          </svg>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>責任分配難題 (Credit Assignment)</h3>
+            <p>長程環境（如 OpenTable 需 14 步交互）存在獎勵極度稀疏問題。Agent Q 透過引入<strong>過程監督（Process Supervision）</strong>打分，與 MCTS 反向傳播回報加權融合：$Q(h,a) = \alpha \tilde{Q} + (1-\alpha)\hat{Q}$。</p>
+          </div>
+          <div class="card">
+            <h3>推論期算力擴展實證</h3>
+            <p>在真實環境中，基於 LLaMA-3-70B 的零樣本基準為 18.6%；微調後達 81.7%（超越 GPT-4o 的 62.6%）；<strong>在推論時賦予 MCTS 搜尋預算後，成功率躍升至 95.4%</strong>。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="academic-footnote">
+        📖 <strong>學術文獻依據</strong>：Putta, Mills, Garg, Motwani, Finn, Garg & Rafailov, <em>"Agent Q: Advanced Reasoning and Learning for Autonomous AI Agents"</em>, arXiv:2408.07199, 2024.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 7 ==================== -->
+    <section class="slide" data-index="7">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="slide-tag">神經-符號混合 • 形式化驗證</span>
+          <span style="font-size: 0.8rem; color: var(--accent-light);">Neuro-Symbolic Planning Integration</span>
+        </div>
+        <h1 class="slide-title">神經-符號混合規劃：AutoGPT+P 與 PDDL 求解</h1>
+        <p class="slide-desc">結合神經網絡之語義解析能力與經典符號規劃器之嚴格可滿足性保證。</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="graph-stage">
+          <svg class="graph-svg" viewBox="0 0 1000 170">
+            <!-- Input -->
+            <rect x="40" y="50" width="160" height="65" rx="8" fill="#1e2238" stroke="#64748b"/>
+            <text x="120" y="80" class="node-text-title">自然語言目標</text>
+            <text x="120" y="98" class="node-text-sub">非結構化人類指令</text>
+
+            <line x1="200" y1="82" x2="270" y2="82" stroke="#6366f1" stroke-width="2" marker-end="url(#arrow)"/>
+
+            <!-- LLM Translator -->
+            <rect x="270" y="45" width="220" height="75" rx="8" fill="#1e2238" stroke="#6366f1"/>
+            <text x="380" y="75" class="node-text-title">LLM 模態轉譯器</text>
+            <text x="380" y="98" class="node-text-sub">實體辨識與對象可用性對齊</text>
+
+            <line x1="490" y1="82" x2="570" y2="82" stroke="#6366f1" stroke-width="2" marker-end="url(#arrow)"/>
+            <text x="530" y="73" class="edge-text">PDDL 規範</text>
+
+            <!-- Symbolic Planner -->
+            <rect x="570" y="45" width="220" height="75" rx="8" fill="#162c3d" stroke="#06b6d4"/>
+            <text x="680" y="75" class="node-text-title" fill="#38bdf8">古典符號規劃器</text>
+            <text x="680" y="98" class="node-text-sub">PDDL / STRIPS 求解引擎</text>
+
+            <line x1="790" y1="82" x2="860" y2="82" stroke="#10b981" stroke-width="2" marker-end="url(#arrow)"/>
+
+            <!-- Output Plan -->
+            <rect x="860" y="50" width="100" height="65" rx="8" fill="#132e27" stroke="#10b981"/>
+            <text x="910" y="80" class="node-text-title" fill="#34d399">驗證計劃</text>
+            <text x="910" y="98" class="node-text-sub">100% 邏輯可達</text>
+          </svg>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>純神經規劃之理論缺陷</h3>
+            <p>神經網路擅長表徵連續語義，但在離散組合狀態空間中，難以保證<strong>前置條件（Preconditions）</strong>與<strong>後續效應（Effects）</strong>的嚴格滿足，在機器人操控與實體任務中容易生成物理不可行指令。</p>
+          </div>
+          <div class="card">
+            <h3>分工邊界與架構互補</h3>
+            <p><strong>AutoGPT+P (Birr et al., 2024)</strong> 確立了架構邊界：LLM 專職負責將非結構化場景對齊至 PDDL 定義域（Domain & Problem Specification），底層動作序列則由確定性符號演算法推導，提供嚴謹的安全性證明。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="academic-footnote">
+        📖 <strong>學術文獻依據</strong>：Birr et al., <em>"AutoGPT+P: Affordance-based Task Planning with Large Language Models"</em>, arXiv:2402.10778, 2024 | Masterman et al., 2024.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 8 ==================== -->
+    <section class="slide" data-index="8">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="slide-tag">成本受控評測 • 帕雷托分析</span>
+          <span style="font-size: 0.8rem; color: var(--accent-light);">Cost-Controlled Evaluation & Pareto Frontier</span>
+        </div>
+        <h1 class="slide-title">成本受控評測：帕雷托前沿與 System 2 迷思</h1>
+        <p class="slide-desc">普林斯頓大學對 SOTA 複雜推理架構之實證解構：多次隨機採樣與高昂成本之真相。</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="graph-stage">
+          <svg class="graph-svg" viewBox="0 0 1000 200">
+            <!-- Axes -->
+            <line x1="100" y1="170" x2="940" y2="170" stroke="#475569" stroke-width="1.5"/>
+            <text x="940" y="165" class="node-text-sub" fill="#94a3b8">推論成本 USD ($)</text>
+
+            <line x1="100" y1="170" x2="100" y2="20" stroke="#475569" stroke-width="1.5"/>
+            <text x="100" y="15" class="node-text-sub" fill="#94a3b8">準確率 (%)</text>
+
+            <!-- Grid Lines -->
+            <line x1="100" y1="40" x2="940" y2="40" stroke="#1e293b" stroke-width="1" stroke-dasharray="2"/>
+            <text x="75" y="45" class="node-text-sub">95%</text>
+
+            <line x1="100" y1="90" x2="940" y2="90" stroke="#1e293b" stroke-width="1" stroke-dasharray="2"/>
+            <text x="75" y="95" class="node-text-sub">90%</text>
+
+            <line x1="100" y1="140" x2="940" y2="140" stroke="#1e293b" stroke-width="1" stroke-dasharray="2"/>
+            <text x="75" y="145" class="node-text-sub">80%</text>
+
+            <!-- Pareto Frontier Curve -->
+            <path d="M 120 120 Q 200 50, 240 50 L 920 60" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4"/>
+            <text x="350" y="42" class="edge-text" fill="#10b981">帕雷托有效前沿 (Pareto Frontier)</text>
+
+            <!-- Point 1: Escalation -->
+            <circle cx="120" cy="120" r="6" fill="#38bdf8"/>
+            <text x="120" y="140" class="node-text-sub">Escalation ($0.27, 85%)</text>
+
+            <!-- Point 2: Warming (Optimal) -->
+            <circle cx="200" cy="50" r="7" fill="#10b981"/>
+            <text x="200" y="35" class="node-text-title" font-size="11" fill="#34d399">Warming (93.2%, $2.45)</text>
+
+            <!-- Point 3: Retry -->
+            <circle cx="210" cy="65" r="5" fill="#38bdf8"/>
+            <text x="250" y="75" class="node-text-sub">Retry ($2.51, 92%)</text>
+
+            <!-- Point 4: Reflexion -->
+            <circle cx="260" cy="95" r="5" fill="#f59e0b"/>
+            <text x="310" y="105" class="node-text-sub">Reflexion ($3.90, 87.8%)</text>
+
+            <!-- Point 5: LDB -->
+            <circle cx="340" cy="48" r="5" fill="#f59e0b"/>
+            <text x="360" y="65" class="node-text-sub">LDB ($6.36, 93.3%)</text>
+
+            <!-- Point 6: LATS (High cost outlier) -->
+            <circle cx="890" cy="90" r="7" fill="#f43f5e"/>
+            <text x="870" y="80" class="node-text-title" font-size="11" fill="#fb7185">LATS ($134.50, 88.0%)</text>
+            <text x="890" y="110" class="node-text-sub" fill="#f87171">成本膨脹 55 倍</text>
+          </svg>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>System 2 增益之實證解構</h3>
+            <p>在 HumanEval 實測中，號稱高階推理架構的 LATS ($134.50) 與 Reflexion ($3.90)，其準確率並未優於極簡的 <strong>Warming 重試基線 ($2.45)</strong>。實證表明，多數報告之增益本質源於<strong>多次採樣機率效應</strong>，而非複雜規劃認知結構所致。</p>
+          </div>
+          <div class="card">
+            <h3>下游工程選型準則</h3>
+            <p>下游開發者應採用<strong>帕雷托最優原則（Pareto Optimality）</strong>：以單位美元成本對應的成功率為主要依據；模型評測控制訓練算力，但應用採購必須控制推論計費與 Token 預算。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="academic-footnote">
+        📖 <strong>學術文獻依據</strong>：Kapoor, Stroebl, Siegel, Nadgir & Narayanan, <em>"AI Agents That Matter"</em>, Princeton University, arXiv:2407.01502, 2024.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 9 ==================== -->
+    <section class="slide" data-index="9">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="slide-tag">因果缺陷 • 理論邊界</span>
+          <span style="font-size: 0.8rem; color: var(--accent-light);">Causal Deficit & Distribution Shift</span>
+        </div>
+        <h1 class="slide-title">理論深水區：因果認知缺失與分佈外脆弱性</h1>
+        <p class="slide-desc">統計關聯推論與結構因果模型（SCM）之本質鴻溝及其引發之系統性失效。</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="graph-stage">
+          <svg class="graph-svg" viewBox="0 0 1000 180">
+            <!-- Left: Observational Correlation -->
+            <rect x="50" y="25" width="410" height="135" rx="10" fill="#161c2d" stroke="#f43f5e" stroke-dasharray="3"/>
+            <text x="255" y="50" class="node-text-title" fill="#fb7185">統計相關性 (Observational: $P(Y|X)$)</text>
+            
+            <circle cx="140" cy="105" r="24" fill="#1e293b" stroke="#f43f5e"/>
+            <text x="140" y="110" class="node-text-sub">特徵 A</text>
+
+            <line x1="165" y1="105" x2="335" y2="105" stroke="#f43f5e" stroke-width="1.8" stroke-dasharray="2"/>
+            <text x="250" y="95" class="edge-text" fill="#f87171">文字共現機率</text>
+
+            <circle cx="360" cy="105" r="24" fill="#1e293b" stroke="#f43f5e"/>
+            <text x="360" y="110" class="node-text-sub">特徵 B</text>
+            <text x="255" y="145" class="node-text-sub" fill="#94a3b8">無法區分因果方向；易受混淆變數干擾</text>
+
+            <!-- Right: Causal DAG -->
+            <rect x="540" y="25" width="410" height="135" rx="10" fill="#161c2d" stroke="#10b981"/>
+            <text x="745" y="50" class="node-text-title" fill="#34d399">結構因果干預 (Interventional: $P(Y|do(X))$)</text>
+
+            <circle cx="630" cy="105" r="24" fill="#132e27" stroke="#10b981"/>
+            <text x="630" y="110" class="node-text-sub">原因 $X$</text>
+
+            <line x1="655" y1="105" x2="825" y2="105" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrow)"/>
+            <text x="740" y="95" class="edge-text" fill="#34d399">物理/狀態轉移動作 $do(X)$</text>
+
+            <circle cx="850" cy="105" r="24" fill="#132e27" stroke="#10b981"/>
+            <text x="850" y="110" class="node-text-sub">結果 $Y$</text>
+            <text x="745" y="145" class="node-text-sub" fill="#94a3b8">支援反事實推演 (Counterfactual Reasoning)</text>
+          </svg>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>缺乏因果推演之后果</h3>
+            <p>LLM 本質是相關性估計器，無法原生執行反事實推演（<em>"若未採取動作 $A$，狀態將如何演變？"</em>）。面對任務環境之分佈漂移（Distribution Shift）時，極易因表面特徵變動導致規劃失序。</p>
+          </div>
+          <div class="card">
+            <h3>評測捷徑案例 (STeP Agent)</h3>
+            <p>Kapoor 等人實證揭露，WebArena 榜首 STeP 代理藉由在策略中<strong>硬編碼 URL 規則</strong>刷出高分；一旦遭遇網站架構真實漂移，因缺乏底層因果認知模型而全線崩潰。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="academic-footnote">
+        📖 <strong>學術文獻依據</strong>：Sapkota et al., 2026 | Kapoor et al., 2024 | Richens & Everitt, <em>"Robust agents learn causal world models"</em>, ICLR 2024.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 10 ==================== -->
+    <section class="slide" data-index="10">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="slide-tag">架構收斂 • 工程法則</span>
+          <span style="font-size: 0.8rem; color: var(--accent-light);">Synthesis & Engineering Principles</span>
+        </div>
+        <h1 class="slide-title">Agent 規劃與推理之四大架構準則</h1>
+        <p class="slide-desc">綜合學術前沿文獻，構建穩健、可擴展且具備經濟效益之 Agent 系統設計規範。</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card" style="border-left: 4px solid var(--accent);">
+            <h3>1. 觀察閉環原則 (Closed-Loop Observation)</h3>
+            <ul>
+              <li><strong>拒絕開環盲目推演</strong>：限制純內部思考（Thought）步數，嚴格要求在動作後插入即時環境觀察（Observation）。</li>
+              <li><strong>狀態接地防線</strong>：以可驗證的環境客觀輸出作為認知錨點，杜絕自回歸誤差積累。</li>
+            </ul>
+          </div>
+
+          <div class="card" style="border-left: 4px solid var(--emerald);">
+            <h3>2. 推論期算力擴展 (Inference-Time Search)</h3>
+            <ul>
+              <li><strong>超越參數規模依賴</strong>：長程或高難度決策優先導入樹搜尋（MCTS）與步驟級過程監督（Critic）。</li>
+              <li><strong>學習負向軌跡</strong>：採用 Trajectory-DPO 範式，從探索過程中的失敗分支建立精確決策邊界。</li>
+            </ul>
+          </div>
+
+          <div class="card" style="border-left: 4px solid var(--amber);">
+            <h3>3. 帕雷托前沿約束 (Pareto Cost-Efficiency)</h3>
+            <ul>
+              <li><strong>反思架構過度工程化</strong>：在引入高階反思/樹搜尋前，必須以 Warming 升溫重試與階梯模型升級（Escalation）為基線。</li>
+              <li><strong>推論計費審計</strong>：將每次任務之 Token 計費與延遲作為系統評測之核心指標。</li>
+            </ul>
+          </div>
+
+          <div class="card" style="border-left: 4px solid var(--cyan);">
+            <h3>4. 權責與故障隔離 (Role-Bound Isolation)</h3>
+            <ul>
+              <li><strong>階層式垂直編排</strong>：設立明確 Leader 代理負責宏觀分解，避免無序群聊引發的諂媚與通訊雜訊。</li>
+              <li><strong>結構化工件通訊</strong>：以標準化 SOP、Schema 與發布-訂閱機制取代自然語言閒聊。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="academic-footnote">
+        📖 <strong>系統綜合依據</strong>：Sapkota et al. (Information Fusion 2026), Masterman et al. (2024), Kapoor et al. (Princeton 2024), Putta et al. (Stanford 2024).
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Controls -->
+  <footer class="controls-bar">
+    <div class="key-hints">
+      <span>導覽切換：<span class="key">←</span> <span class="key">→</span> 或 <span class="key">Space</span></span>
+      <span>全螢幕模式：<span class="key">F</span></span>
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-nav" id="prevBtn" onclick="changeSlide(-1)">
+        <span>◀</span> 上一頁
+      </button>
+      <button class="btn-nav" id="nextBtn" onclick="changeSlide(1)">
+        下一頁 <span>▶</span>
+      </button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentSlide = 0;
+
+    const slideNum = document.getElementById('slideNum');
+    const progressFill = document.getElementById('progressFill');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    function updateDeck() {
+      slides.forEach((slide, idx) => {
+        if (idx === currentSlide) {
+          slide.classList.add('active');
+        } else {
+          slide.classList.remove('active');
+        }
+      });
+
+      slideNum.textContent = `Slide ${currentSlide + 1} / ${totalSlides}`;
+      const percentage = ((currentSlide + 1) / totalSlides) * 100;
+      progressFill.style.width = `${percentage}%`;
+
+      prevBtn.disabled = currentSlide === 0;
+      nextBtn.disabled = currentSlide === totalSlides - 1;
+    }
+
+    function changeSlide(direction) {
+      const nextIndex = currentSlide + direction;
+      if (nextIndex >= 0 && nextIndex < totalSlides) {
+        currentSlide = nextIndex;
+        updateDeck();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        changeSlide(1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        changeSlide(-1);
+      } else if (e.key.toLowerCase() === 'f') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    });
+
+    updateDeck();
+  </script>
+</body>
+</html>
