@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Planning & Reasoning：學術架構與認知演進</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.75);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --cyan: #0ea5e9;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --footnote: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", Roboto, sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 20%, #1e293b 0%, var(--bg) 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    /* Header Bar */
+    header {
+      padding: 12px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      z-index: 100;
+    }
+
+    .brand-title {
+      font-size: 1.02rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge-academic {
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #fff;
+      text-transform: uppercase;
+    }
+
+    .slide-progress {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Main Deck Container */
+    main.deck-container {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 40px;
+    }
+
+    .slide {
+      position: absolute;
+      width: 100%;
+      max-width: 1120px;
+      height: 84vh;
+      max-height: 720px;
+      min-height: 520px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 26px 38px 18px 38px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start; /* Prevents center-overflow collision */
+      gap: 12px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(14px) scale(0.985);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(16px);
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Slide Header */
+    .slide-header {
+      flex-shrink: 0;
+    }
+
+    .slide-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .tag-badge {
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      color: var(--accent-light);
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .slide-index-tag {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    h1.slide-title {
+      font-size: 1.85rem;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 4px;
+      background: linear-gradient(135deg, #ffffff 40%, var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.slide-subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin-bottom: 8px;
+    }
+
+    /* Content Area & Cards */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start; /* Natural top-down flow */
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .grid-3, .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    .concept-card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      line-height: 1.5;
+    }
+
+    .concept-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(99, 102, 241, 0.4);
+      background: rgba(15, 23, 42, 0.85);
+    }
+
+    .card-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      margin-bottom: 2px;
+    }
+
+    .icon-indigo { background: rgba(99, 102, 241, 0.15); color: var(--accent-light); }
+    .icon-cyan { background: rgba(14, 165, 233, 0.15); color: var(--cyan); }
+    .icon-emerald { background: rgba(16, 185, 129, 0.15); color: var(--emerald); }
+    .icon-amber { background: rgba(245, 158, 11, 0.15); color: var(--amber); }
+    .icon-rose { background: rgba(244, 63, 94, 0.15); color: var(--rose); }
+
+    .concept-card h3 {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .concept-card p, .concept-card ul {
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      line-height: 1.55;
+    }
+
+    .concept-card ul {
+      padding-left: 18px;
+    }
+
+    .concept-card li {
+      margin-bottom: 4px;
+    }
+
+    /* Pathway Navigation Pill */
+    .roadmap-pill {
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.84rem;
+    }
+
+    .roadmap-label {
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .roadmap-steps {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #e2e8f0;
+      font-weight: 500;
+    }
+
+    .step-arrow {
+      color: var(--footnote);
+      font-size: 0.8rem;
+    }
+
+    .current-step {
+      color: var(--cyan);
+      font-weight: 700;
+    }
+
+    /* Flow cycle box */
+    .flow-cycle {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: 10px;
+      padding: 12px 16px;
+      background: rgba(15, 23, 42, 0.55);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .flow-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 4px;
+    }
+
+    .node-tag {
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .flow-arrow {
+      color: var(--footnote);
+      font-size: 1rem;
+      font-weight: bold;
+    }
+
+    /* Metric Badges & Tables */
+    .metric-badge {
+      display: inline-block;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+    .badge-green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .badge-cyan { background: rgba(14, 165, 233, 0.2); color: #38bdf8; }
+    .badge-amber { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .badge-red { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      margin-top: 4px;
+    }
+
+    .data-table th, .data-table td {
+      padding: 7px 10px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .data-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    /* Footnote */
+    .footnote {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 8px;
+      margin-top: auto; /* Always stays at bottom */
+      font-size: 0.76rem;
+      color: var(--footnote);
+      line-height: 1.4;
+      flex-shrink: 0;
+    }
+
+    .footnote strong {
+      color: var(--text-muted);
+    }
+
+    /* Footer Controls */
+    footer.controls-bar {
+      padding: 10px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+    }
+
+    .progress-bar-container {
+      flex: 1;
+      max-width: 450px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 0 24px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--cyan));
+      width: 10%;
+      transition: width 0.3s ease;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    button.btn-nav {
+      background: rgba(255, 255, 255, 0.07);
+      color: #fff;
+      border: 1px solid var(--card-border);
+      padding: 7px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    button.btn-nav:hover:not(:disabled) {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    button.btn-nav:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+
+    .key-hints {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 8px;
+    }
+
+    .key {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.72rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2, .grid-3, .cards-grid { grid-template-columns: 1fr; }
+      .slide { padding: 18px; height: 88vh; }
+      header, footer.controls-bar { padding: 8px 16px; }
+      h1.slide-title { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand-title">
+      <span class="badge-academic">AI Agent 架構課堂</span>
+      <span>Agent Planning & Reasoning：學術架構與認知演進</span>
+    </div>
+    <div class="slide-progress" id="slideNum">Slide 1 / 10</div>
+  </header>
+
+  <!-- Slide Deck -->
+  <main class="deck-container">
+
+    <!-- ==================== SLIDE 1 ==================== -->
+    <section class="slide active" data-index="1">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="tag-badge">AI Agent 架構入門</span>
+          <span class="slide-index-tag">Slide 01 / 10</span>
+        </div>
+        <h1 class="slide-title">Agent Planning & Reasoning：AI 如何思考與規劃？</h1>
+        <p class="slide-subtitle">從「回答問題的對話機器人」，升級為「主動達成目標的智慧代理」</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-3">
+          <div class="concept-card">
+            <div class="card-icon icon-cyan">🧠</div>
+            <h3>什麼是推理？(Reasoning)</h3>
+            <p>不只是死記硬背或單純猜測下一個詞，而是面對新問題時，能進行邏輯推導（「因為 A 所以 B」），將複雜任務拆解成具體執行的子步驟。</p>
+          </div>
+
+          <div class="concept-card">
+            <div class="card-icon icon-indigo">🧭</div>
+            <h3>什麼是規劃？(Planning)</h3>
+            <p>決定行動的先後順序與策略。在執行過程中隨時觀察環境反饋，若遇到錯誤（例如網頁改版或工具報錯），能及時調整路徑重試。</p>
+          </div>
+
+          <div class="concept-card">
+            <div class="card-icon icon-emerald">🎯</div>
+            <h3>為什麼這件事重要？</h3>
+            <p>過去僅依賴把模型做大（參數量增加）；如今的研究證實：<strong>具備良好規劃與自我反思策略的 AI，能以極低成本達成超越大模型的表現</strong>。</p>
+          </div>
+        </div>
+
+        <div class="roadmap-pill">
+          <span class="roadmap-label">本簡報學習地圖：</span>
+          <div class="roadmap-steps">
+            <span class="current-step">1. 核心定義</span>
+            <span class="step-arrow">➔</span>
+            <span>2. 思考與行動閉環 (ReAct)</span>
+            <span class="step-arrow">➔</span>
+            <span>3. 錯誤反思 (Reflexion)</span>
+            <span class="step-arrow">➔</span>
+            <span>4. 樹搜尋與成本反思</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="footnote">
+        📖 <strong>參考論文</strong>：Sapkota, Roumeliotis & Karkee, <em>"AI Agents vs. Agentic AI: A Conceptual taxonomy, applications and challenges"</em>, Information Fusion, 2026.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 2 ==================== -->
+    <section class="slide" data-index="2">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="tag-badge">範式對比 • 系統邊界</span>
+          <span class="slide-index-tag">Slide 02 / 10</span>
+        </div>
+        <h1 class="slide-title">對話機器人 vs. 智慧代理：差在哪裡？</h1>
+        <p class="slide-subtitle">為什麼一般的 ChatGPT 無法直接幫你搞定複雜工作？</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="concept-card" style="border-left: 4px solid var(--rose);">
+            <div class="card-icon icon-rose">💬</div>
+            <h3>傳統 Chatbot（開環系統）</h3>
+            <ul>
+              <li><strong>問一句答一句</strong>：完全由使用者 Prompt 驅動，回答完就結束。</li>
+              <li><strong>無狀態 (Stateless)</strong>：講完就忘，缺乏長效記憶與時間連續性。</li>
+              <li><strong>只說不做</strong>：無法主動驗證答案是否在現實世界有效，容易一本正經地產生幻覺。</li>
+              <li><strong>缺乏行動手腳</strong>：無法直接操縱瀏覽器、資料庫或發送 API 請求。</li>
+            </ul>
+          </div>
+
+          <div class="concept-card" style="border-left: 4px solid var(--emerald);">
+            <div class="card-icon icon-emerald">🤖</div>
+            <h3>智慧代理 AI Agent（閉環系統）</h3>
+            <ul>
+              <li><strong>目標驅動 (Goal-driven)</strong>：給定高階目標，自主拆解成步驟並執行。</li>
+              <li><strong>狀態管理與記憶</strong>：記錄歷史操作軌跡 <i>h<sub>t</sub></i>，能跨多步驟保持連續性。</li>
+              <li><strong>環境感知 (Perception)</strong>：每做一步都會「看一眼現實反饋」（如 API 結果或網頁狀態）。</li>
+              <li><strong>自我糾錯</strong>：遭遇執行失敗時，會動態重新規劃（Replanning）嘗試替代方案。</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="roadmap-pill">
+          <span class="roadmap-label">核心範式跨越：</span>
+          <div class="roadmap-steps">
+            <span>開環生成（只管輸出文本）</span>
+            <span class="step-arrow">➔</span>
+            <span class="current-step">閉環控制（感知 ➔ 思考 ➔ 行動 ➔ 驗證）</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="footnote">
+        📖 <strong>參考論文</strong>：Sapkota et al., <em>Information Fusion</em>, 2026 | Wooldridge & Jennings, <em>"Intelligent Agents: Theory and Practice"</em>, 1995.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 3 ==================== -->
+    <section class="slide" data-index="3">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="tag-badge">推理演進 • 線性思維</span>
+          <span class="slide-index-tag">Slide 03 / 10</span>
+        </div>
+        <h1 class="slide-title">思維鏈 (CoT)：讓 AI 寫下思考過程，但為何依然會出錯？</h1>
+        <p class="slide-subtitle">加一句「一步一步想」，確實變聰明了，但它依然是在「閉門造車」</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="concept-card">
+            <div class="card-icon icon-cyan">📝</div>
+            <h3>思維鏈 (Chain-of-Thought) 的機制</h3>
+            <p><strong>咒語</strong>："Let's think step by step"</p>
+            <p><strong>核心價值</strong>：強制模型在輸出最終解答前，先產出中間推論步驟。這讓模型在推論時獲得更多計算時間（Inference Tokens），大幅提升數學與邏輯題的準確率。</p>
+          </div>
+
+          <div class="concept-card">
+            <div class="card-icon icon-rose">⚠️</div>
+            <h3>致命缺陷：誤差滾雪球 (Error Cascades)</h3>
+            <p>因為模型是在封閉的大腦裡自言自語，缺乏外部客觀數據的檢驗：</p>
+            <ul>
+              <li><strong>單點錯誤骨牌效應</strong>：只要第 1 步推演出錯，模型就會把這個錯誤當作真理，繼續往下推導。</li>
+              <li><strong>結果</strong>：產出一個「邏輯自洽、看起來非常專業，但答案完全錯誤」的幻覺輸出。</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flow-cycle">
+          <div class="flow-node">
+            <span class="node-tag badge-amber">步驟 1：初始假設</span>
+            <small style="color:var(--rose);">若產生微小誤判</small>
+          </div>
+          <span class="flow-arrow">➔</span>
+          <div class="flow-node">
+            <span class="node-tag badge-red">步驟 2：條件推論</span>
+            <small style="color:var(--text-muted);">基於錯誤假設演繹</small>
+          </div>
+          <span class="flow-arrow">➔</span>
+          <div class="flow-node">
+            <span class="node-tag badge-red">步驟 3：幻覺累積</span>
+            <small style="color:var(--rose);">最終得出荒謬結論</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="footnote">
+        📖 <strong>參考論文</strong>：Wei et al., <em>"Chain-of-thought prompting elicits reasoning in large language models"</em>, NeurIPS 2022 | Zhang et al., 2023.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 4 ==================== -->
+    <section class="slide" data-index="4">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="tag-badge">閉環架構 • 狀態接地</span>
+          <span class="slide-index-tag">Slide 04 / 10</span>
+        </div>
+        <h1 class="slide-title">ReAct 架構：邊想、邊做、邊看結果</h1>
+        <p class="slide-subtitle">普林斯頓大學經典架構：如何讓 AI 的思考隨時被現實數據校準？</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="flow-cycle" style="padding: 16px;">
+          <div class="flow-node">
+            <div class="card-icon icon-indigo">🧠</div>
+            <span class="node-tag badge-cyan">1. Thought (思考)</span>
+            <small style="color:#cbd5e1; margin-top:4px;">分析當前進度與子目標</small>
+          </div>
+          <span class="flow-arrow">➔</span>
+          <div class="flow-node">
+            <div class="card-icon icon-amber">⚡</div>
+            <span class="node-tag badge-amber">2. Action (行動)</span>
+            <small style="color:#cbd5e1; margin-top:4px;">調用 API、搜尋、查庫</small>
+          </div>
+          <span class="flow-arrow">➔</span>
+          <div class="flow-node">
+            <div class="card-icon icon-emerald">👁️</div>
+            <span class="node-tag badge-green">3. Observation (觀察)</span>
+            <small style="color:#cbd5e1; margin-top:4px;">讀取真實反饋，校準大腦</small>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="concept-card">
+            <h3>實證效益 (HotpotQA 評測)</h3>
+            <p>傳統純 CoT 的幻覺率為 <strong>14%</strong>，而引入環境觀察的 ReAct 架構直接將幻覺率<strong>壓低至 6%</strong>！外部工具回傳的真實資料成為了防止 AI 胡思亂想的堅固錨點。</p>
+          </div>
+
+          <div class="concept-card">
+            <h3>現存挑戰：死循環問題</h3>
+            <p>若外部工具回傳「查無結果」或介面報錯，缺乏全局長程視野的 Agent 容易陷入死循環——在同一個步驟反覆發送相同的無效請求，無法自主跳出。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="footnote">
+        📖 <strong>參考論文</strong>：Yao, Zhao, Yu, Du, Shafran, Narasimhan & Cao, <em>"ReAct: Synergizing Reasoning and Acting in Language Models"</em>, ICLR 2023.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 5 ==================== -->
+    <section class="slide" data-index="5">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="tag-badge">自我演進 • 反思循環</span>
+          <span class="slide-index-tag">Slide 05 / 10</span>
+        </div>
+        <h1 class="slide-title">Reflexion：不改模型權重，用「文字檢討」實現自我糾錯</h1>
+        <p class="slide-subtitle">任務失敗了怎麼辦？讓 AI 撰寫自己的檢討筆記</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="concept-card">
+            <div class="card-icon icon-cyan">🔄</div>
+            <h3>語言強化學習 (Verbal RL)</h3>
+            <ul>
+              <li><strong>執行任務</strong>：Agent 進行 ReAct 循環嘗試解決問題。</li>
+              <li><strong>結果評判 (Evaluator)</strong>：若任務失敗（如程式碼報錯），評判器攔截並給予警示。</li>
+              <li><strong>撰寫反思</strong>：模型用文字寫下失敗原因：「剛才查詢 API 時參數格式錯誤，下次應先確認 Schema」。</li>
+              <li><strong>記憶回填</strong>：將檢討筆記存入情節記憶，下一次嘗試時自動讀取，避免重犯。</li>
+            </ul>
+          </div>
+
+          <div class="concept-card">
+            <div class="card-icon icon-rose">⚠️</div>
+            <h3>實踐上的關鍵邊界</h3>
+            <ul>
+              <li><strong>必須有客觀的裁判</strong>：反思機制的高度有效性建立在「客觀外部信號」（如單元測試通過率、編譯錯誤碼）。若由 AI 自己給自己打分，容易產生「盲目自信」的確認偏誤。</li>
+              <li><strong>局部最優陷阱</strong>：有時模型反思後，只是在幾種錯誤的解法之間來回輪替，無法跳出固有思維。</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="roadmap-pill">
+          <span class="roadmap-label">核心突破：</span>
+          <div class="roadmap-steps">
+            <span>傳統微調（耗資千萬重調權重）</span>
+            <span class="step-arrow">➔</span>
+            <span class="current-step">文字反思（零訓練成本，將經驗沉澱為上下文記憶）</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="footnote">
+        📖 <strong>參考論文</strong>：Shinn, Cassano, Gopinath, Narasimhan & Yao, <em>"Reflexion: Language Agents with Verbal Reinforcement Learning"</em>, NeurIPS 2023.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 6 ==================== -->
+    <section class="slide" data-index="6">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="tag-badge">推論期搜尋 • 算力擴展</span>
+          <span class="slide-index-tag">Slide 06 / 10</span>
+        </div>
+        <h1 class="slide-title">樹狀探索與推論期算力：像下棋一樣預演未來</h1>
+        <p class="slide-subtitle">當任務需要 10 步以上（如複雜網頁操作），單線思考為何行不通？</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="concept-card">
+            <div class="card-icon icon-emerald">🌳</div>
+            <h3>樹狀搜尋 (MCTS) 的力量</h3>
+            <p>真實世界任務不是單行道。在每一步，Agent 往往面臨多種選擇：</p>
+            <ul>
+              <li><strong>單線思維的局限</strong>：一旦某一步選錯，後續全盤皆輸，傳統 Agent 不懂得「回溯（Backtracking）」。</li>
+              <li><strong>樹狀搜尋優勢</strong>：同時探索多條可能路徑，評估各分支勝率，遇到阻礙時及時退回上一步換條路走。</li>
+            </ul>
+          </div>
+
+          <div class="concept-card">
+            <div class="card-icon icon-cyan">🚀</div>
+            <h3>Agent Q 的實證突破 (MultiOn & Stanford, 2024)</h3>
+            <p>攻克長達 14 步的真實 OpenTable 餐廳線上預訂：</p>
+            <ul>
+              <li><strong>過程監督 Critic</strong>：引入 AI 評審在每一步打分，解決「責任分配（不知哪一步做錯）」難題。</li>
+              <li><strong>實測戰績</strong>：推論期樹搜尋使成功率從 18.6%（原始 LLaMA-3）一路暴增至 <strong>95.4%</strong>！</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="flow-cycle">
+          <div class="flow-node">
+            <span class="node-tag badge-red">原始 LLaMA-3: 18.6%</span>
+            <small>單線 Zero-shot</small>
+          </div>
+          <span class="flow-arrow">➔</span>
+          <div class="flow-node">
+            <span class="node-tag badge-cyan">Agent Q 微調: 81.7%</span>
+            <small>超越 GPT-4o (62.6%)</small>
+          </div>
+          <span class="flow-arrow">➔</span>
+          <div class="flow-node">
+            <span class="node-tag badge-green">開 MCTS 樹搜尋: 95.4%</span>
+            <small>推論期算力極限表現</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="footnote">
+        📖 <strong>參考論文</strong>：Putta et al., <em>"Agent Q: Advanced Reasoning and Learning for Autonomous AI Agents"</em>, arXiv:2408.07199, 2024.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 7 ==================== -->
+    <section class="slide" data-index="7">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="tag-badge">混合架構 • 形式化驗證</span>
+          <span class="slide-index-tag">Slide 07 / 10</span>
+        </div>
+        <h1 class="slide-title">神經與符號結合：為什麼物理世界需要經典規劃器？</h1>
+        <p class="slide-subtitle">結合 LLM 的靈活語意理解與經典符號 AI 的 100% 邏輯保證</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="concept-card">
+            <div class="card-icon icon-rose">⚠️</div>
+            <h3>純 LLM 在實體任務中的硬傷</h3>
+            <p>神經網路擅長模糊語意，但對<strong>硬性物理約束</strong>非常遲鈍：</p>
+            <ul>
+              <li>例如控制機械手臂時，機器人必須先滿足：<code>[櫃門已開] 且 [手中有物]</code> 才能執行存放。</li>
+              <li>純 LLM 規劃時，容易漏看前置條件，輸出違反物理邏輯的無效動作。</li>
+            </ul>
+          </div>
+
+          <div class="concept-card">
+            <div class="card-icon icon-indigo">⚙️</div>
+            <h3>AutoGPT+P 的雙引擎解法 (IBM, 2024)</h3>
+            <ul>
+              <li><strong>LLM 擔任通譯員</strong>：把人類自然語言指令，轉譯為業界標準規劃語言 <strong>PDDL (Planning Domain Definition Language)</strong>。</li>
+              <li><strong>符號規劃器執行求解</strong>：調用發展超過 50 年的成熟符號求解器，依據嚴格公式算出一條<strong>保證 100% 邏輯可行</strong>的動作路徑。</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="roadmap-pill">
+          <span class="roadmap-label">架構優勢互補：</span>
+          <div class="roadmap-steps">
+            <span>LLM 負責柔軟的「語意與場景辨識」</span>
+            <span class="step-arrow">+</span>
+            <span class="current-step">符號求解器負責嚴格的「數學邏輯與安全驗證」</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="footnote">
+        📖 <strong>參考論文</strong>：Birr et al., <em>"AutoGPT+P: Affordance-based Task Planning with Large Language Models"</em>, arXiv:2402.10778, 2024 | Masterman et al., 2024.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 8 (FIXED LAYOUT) ==================== -->
+    <section class="slide" data-index="8">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="tag-badge">成本受控 • 帕雷托前沿</span>
+          <span class="slide-index-tag">Slide 08 / 10</span>
+        </div>
+        <h1 class="slide-title">普林斯頓的當頭棒喝：複雜的架構真的比較強嗎？</h1>
+        <p class="slide-subtitle">論文《AI Agents That Matter》(Princeton, 2024) 揭開的 SOTA 真相</p>
+      </div>
+
+      <div class="slide-body">
+        <!-- 2 Columns side-by-side: Table on Left, Insights on Right to prevent vertical overflow -->
+        <div class="grid-2" style="grid-template-columns: 1.15fr 0.85fr; align-items: stretch;">
+          <div class="concept-card" style="justify-content: flex-start;">
+            <h3 style="margin-bottom: 6px;">HumanEval (程式寫作評測) 實測對照</h3>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>策略 / 架構</th>
+                  <th>準確率</th>
+                  <th>推論成本</th>
+                  <th>工程評價</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Warming (升溫重試)</strong></td>
+                  <td><span class="metric-badge badge-green">93.2%</span></td>
+                  <td><span class="metric-badge badge-green">$2.45</span></td>
+                  <td>帕雷托前沿最佳點</td>
+                </tr>
+                <tr>
+                  <td><strong>Reflexion (反思自省)</strong></td>
+                  <td>87.8%</td>
+                  <td>$3.90</td>
+                  <td>成本多 59%，準確率未升</td>
+                </tr>
+                <tr>
+                  <td><strong>LATS (複雜樹搜尋)</strong></td>
+                  <td>88.0%</td>
+                  <td><span class="metric-badge badge-red">$134.50</span></td>
+                  <td><strong>成本暴增 55 倍，準確率反降</strong></td>
+                </tr>
+                <tr>
+                  <td><strong>Escalation (小模型先上)</strong></td>
+                  <td>85.0%</td>
+                  <td><span class="metric-badge badge-green">$0.27</span></td>
+                  <td>成本減 90%，維持高可用性</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="concept-card" style="flex: 1;">
+              <h3>打破 System 2 神話</h3>
+              <p>許多宣稱「深思熟慮」的複雜反思架構，實質增益其實只是來自<strong>多次隨機採樣（Sampling / Retries）</strong>，而非模型真正擁有了高深推理能力。</p>
+            </div>
+            <div class="concept-card" style="flex: 1;">
+              <h3>帕雷托前沿思維 (Pareto)</h3>
+              <p>不計成本的架構毫無商業意義。工程落地時應遵循<strong>帕雷托最優原則</strong>：以單位美元成本換取的準確率為核心，優先考慮 Warming 與階梯模型升級。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footnote">
+        📖 <strong>參考論文</strong>：Kapoor, Stroebl, Siegel, Nadgir & Narayanan, <em>"AI Agents That Matter"</em>, Princeton University, arXiv:2407.01502, 2024.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 9 ==================== -->
+    <section class="slide" data-index="9">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="tag-badge">理論瓶頸 • 未來挑戰</span>
+          <span class="slide-index-tag">Slide 09 / 10</span>
+        </div>
+        <h1 class="slide-title">當前最大的未解難題：統計相關不等於真實因果</h1>
+        <p class="slide-subtitle">為什麼真實世界稍微改版或遇到突發狀況，Agent 就容易崩潰？</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="concept-card">
+            <div class="card-icon icon-rose">❌</div>
+            <h3>因果理解的盲區 (Causal Deficit)</h3>
+            <p>LLM 本質上是文字機率預測器：</p>
+            <ul>
+              <li>它知道「醫院」和「生病」經常同時出現在文章中，但它無法真正理解誰是因、誰是果。</li>
+              <li><strong>缺乏反事實推演能力</strong>：無法在腦海中可靠地模擬「如果我剛才沒有執行動作 A，世界現在會如何變化？」</li>
+            </ul>
+          </div>
+
+          <div class="concept-card">
+            <div class="card-icon icon-amber">📉</div>
+            <h3>分佈漂移與基準作弊 (Gaming)</h3>
+            <ul>
+              <li><strong>真實環境變化的脆弱性</strong>：網頁按鈕位置微調或 API 欄位改動，統計導向的 Agent 就容易迷失並陷入死循環。</li>
+              <li><strong>WebArena 榜首案例</strong>：STeP 代理被揭發直接在代碼中「硬編碼 URL 規則」刷高分，一旦網站發生真實改版，便瞬間全線崩潰。</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="roadmap-pill">
+          <span class="roadmap-label">未來研究方向：</span>
+          <div class="roadmap-steps">
+            <span>引入結構因果模型 (Causal Graphs)</span>
+            <span class="step-arrow">+</span>
+            <span class="current-step">世界模型模擬 (World Models & Zero-Data Self-play)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="footnote">
+        📖 <strong>參考論文</strong>：Sapkota et al., <em>Information Fusion</em>, 2026 | Kapoor et al., 2024 | Richens & Everitt, <em>ICLR</em>, 2024.
+      </div>
+    </section>
+
+    <!-- ==================== SLIDE 10 ==================== -->
+    <section class="slide" data-index="10">
+      <div class="slide-header">
+        <div class="slide-meta">
+          <span class="tag-badge">架構收斂 • 設計心法</span>
+          <span class="slide-index-tag">Slide 10 / 10</span>
+        </div>
+        <h1 class="slide-title">設計 Agent Planning 的四大黃金工程法則</h1>
+        <p class="slide-subtitle">融會貫通頂級學術研究，打造可靠、穩健且經濟的智慧代理</p>
+      </div>
+
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="concept-card" style="border-left: 4px solid var(--accent);">
+            <h3>1. 狀態閉環原則 (ReAct)</h3>
+            <p>絕不讓 AI 獨自空想超過兩步。每一次動作後，都必須強制插入「觀察環境反饋（Observation）」的機制，用現實世界的客觀數據錨定思維，杜絕自言自語產生的幻覺積累。</p>
+          </div>
+
+          <div class="concept-card" style="border-left: 4px solid var(--emerald);">
+            <h3>2. 推論期算力擴展 (Search)</h3>
+            <p>面對高難度、長步數的任務，與其盲目迷信超大模型，不如引入 MCTS 樹搜尋與步驟級 Critic（如 Agent Q），給予模型在推論時探索不同路徑與及時回溯的空間。</p>
+          </div>
+
+          <div class="concept-card" style="border-left: 4px solid var(--amber);">
+            <h3>3. 帕雷托成本約束 (Pareto)</h3>
+            <p>拒絕無謂的架構過度工程化。記住普林斯頓的啟示：簡單的升溫重試（Warming）與小模型階梯升級（Escalation），往往能在五十分之一的成本下達到相同精度。</p>
+          </div>
+
+          <div class="concept-card" style="border-left: 4px solid var(--cyan);">
+            <h3>4. 權責分明與故障隔離</h3>
+            <p>多 Agent 協同必須設立專職 Leader 負責拆解任務，並透過標準作業程序（SOP / JSON Schema）取代無序的自然語言群聊，徹底根除客套廢話與誤差級聯。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="footnote">
+        📖 <strong>系統綜合依據</strong>：Sapkota et al. (Information Fusion 2026), Masterman et al. (2024), Kapoor et al. (Princeton 2024), Putta et al. (Stanford 2024).
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Navigation Bar -->
+  <footer class="controls-bar">
+    <div class="key-hints">
+      <span>導覽切換：<span class="key">←</span> <span class="key">→</span> 或 <span class="key">Space</span></span>
+      <span>全螢幕模式：<span class="key">F</span></span>
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-nav" id="prevBtn" onclick="changeSlide(-1)">
+        <span>◀</span> 上一頁
+      </button>
+      <button class="btn-nav" id="nextBtn" onclick="changeSlide(1)">
+        下一頁 <span>▶</span>
+      </button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentSlide = 0;
+
+    const slideNum = document.getElementById('slideNum');
+    const progressFill = document.getElementById('progressFill');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    function updateDeck() {
+      slides.forEach((slide, idx) => {
+        if (idx === currentSlide) {
+          slide.classList.add('active');
+        } else {
+          slide.classList.remove('active');
+        }
+      });
+
+      slideNum.textContent = `Slide ${currentSlide + 1} / ${totalSlides}`;
+      const percentage = ((currentSlide + 1) / totalSlides) * 100;
+      progressFill.style.width = `${percentage}%`;
+
+      prevBtn.disabled = currentSlide === 0;
+      nextBtn.disabled = currentSlide === totalSlides - 1;
+    }
+
+    function changeSlide(direction) {
+      const nextIndex = currentSlide + direction;
+      if (nextIndex >= 0 && nextIndex < totalSlides) {
+        currentSlide = nextIndex;
+        updateDeck();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        changeSlide(1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        changeSlide(-1);
+      } else if (e.key.toLowerCase() === 'f') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    });
+
+    updateDeck();
+  </script>
+</body>
+</html>
